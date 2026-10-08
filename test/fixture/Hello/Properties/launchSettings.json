@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    // A profile with arguments and an environment variable, to check both reach the program.
+    "Greet": {
+      "commandName": "Project",
+      "commandLineArgs": "\"John Smith\"",
+      "environmentVariables": { "GREETING": "Hi" }
+    },
+    "Plain": { "commandName": "Project" }
+  }
+}

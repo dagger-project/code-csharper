@@ -64,6 +64,18 @@ have run.
   (`dotnet tool install -g Digger.Debugger`). Digger runs on Linux and macOS; elsewhere, or without
   it, the C# extension's debugger is used.
 
+### Flatpak VSCodium
+
+The Flatpak VSCodium runs in a sandbox that can't see a .NET SDK installed on the host. Give it
+the .NET SDK extension:
+
+```sh
+flatpak install --user flathub org.freedesktop.Sdk.Extension.dotnet10//25.08
+flatpak override --user --env=FLATPAK_ENABLE_SDK_EXT=dotnet10 com.vscodium.codium
+```
+
+`digger` from `dotnet tool install -g` lives in your home directory, which the sandbox can see.
+
 ## Settings
 
 | Setting | Default | |
@@ -95,6 +107,22 @@ npm run package   # code-csharper-<version>.vsix
 ```
 
 Press F5 in VS Code ("Run Extension") to start an Extension Development Host.
+
+### End-to-end tests
+
+`npm run test:e2e` starts an editor with Code Csharper and the Digger extension (from
+`../Digger/editors/vscode`), opens `test/fixture` (a console app, a web app, and xUnit, NUnit and
+MSTest projects) and drives launch profiles and tests through the real dotnet SDK and Digger: it
+checks discovery and results, stops at breakpoints in a test and in a program, and checks that a
+profile's arguments, environment and URL reach the program.
+
+```sh
+npm run test:e2e                                                # downloads VS Code
+CODE_EXECUTABLE=test/e2e/codium-flatpak.sh npm run test:e2e     # the Flatpak VSCodium
+DIGGER_PATH=../Digger/artifacts/e2e-digger/digger npm run test:e2e   # a digger built from source
+```
+
+The editor opens a window while the tests run.
 
 ## Releasing
 

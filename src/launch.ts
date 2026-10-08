@@ -49,8 +49,8 @@ function debugConfiguration(target: LaunchTarget): CsharperConfiguration {
   };
 }
 
-export async function debugTarget(target: LaunchTarget, noDebug = false): Promise<void> {
-  await vscode.debug.startDebugging(target.project.folder, debugConfiguration(target), { noDebug });
+export function debugTarget(target: LaunchTarget, noDebug = false): Thenable<boolean> {
+  return vscode.debug.startDebugging(target.project.folder, debugConfiguration(target), { noDebug });
 }
 
 export async function runTarget(target: LaunchTarget): Promise<void> {
@@ -109,6 +109,14 @@ class CsharperConfigurationProvider implements vscode.DebugConfigurationProvider
     folder: vscode.WorkspaceFolder | undefined,
     config: CsharperConfiguration,
   ): Promise<vscode.DebugConfiguration | undefined> {
+    // VS Code passes a configuration through every provider registered for its type in turn;
+    // once one has turned it into a digger or coreclr configuration, there is nothing left to do.
+    // (F5 without a launch.json passes an empty configuration, type included.)
+    const type: unknown = config.type;
+    if (typeof type === "string" && type !== "" && type !== "csharper") {
+      return config;
+    }
+
     let target: LaunchTarget | undefined;
     if (typeof config.project === "string") {
       const projectPath = resolveProjectPath(config.project, folder);
@@ -220,9 +228,13 @@ export function registerLaunching(
   projects: ProjectIndex,
   selected: () => LaunchTarget | undefined,
 ): void {
-  const provider = new CsharperConfigurationProvider(projects, selected);
+  // Registered once: every registration's resolveDebugConfiguration runs, whatever its trigger
+  // kind. Dynamic is what lists the targets in the Run and Debug view's dropdown.
   context.subscriptions.push(
-    vscode.debug.registerDebugConfigurationProvider("csharper", provider, vscode.DebugConfigurationProviderTriggerKind.Dynamic),
-    vscode.debug.registerDebugConfigurationProvider("csharper", provider),
+    vscode.debug.registerDebugConfigurationProvider(
+      "csharper",
+      new CsharperConfigurationProvider(projects, selected),
+      vscode.DebugConfigurationProviderTriggerKind.Dynamic,
+    ),
   );
 }

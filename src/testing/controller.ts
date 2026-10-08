@@ -25,7 +25,9 @@ type ItemData = {
 const sourceExclude = "**/{bin,obj}/**";
 
 export class TestExplorer implements vscode.Disposable {
-  private readonly controller = vscode.tests.createTestController("codeCsharper", ".NET Tests");
+  public readonly controller = vscode.tests.createTestController("codeCsharper", ".NET Tests");
+  public readonly runProfile: vscode.TestRunProfile;
+  public readonly debugProfile: vscode.TestRunProfile;
   private readonly data = new WeakMap<vscode.TestItem, ItemData>();
   private readonly disposables: vscode.Disposable[] = [this.controller];
   private readonly pendingProjects = new Set<string>();
@@ -33,8 +35,8 @@ export class TestExplorer implements vscode.Disposable {
 
   public constructor(private readonly projects: ProjectIndex) {
     this.controller.refreshHandler = () => projects.refresh();
-    this.controller.createRunProfile("Run", vscode.TestRunProfileKind.Run, (request, token) => this.run(request, token, false), true);
-    this.controller.createRunProfile("Debug", vscode.TestRunProfileKind.Debug, (request, token) => this.run(request, token, true), true);
+    this.runProfile = this.controller.createRunProfile("Run", vscode.TestRunProfileKind.Run, (request, token) => this.run(request, token, false), true);
+    this.debugProfile = this.controller.createRunProfile("Debug", vscode.TestRunProfileKind.Debug, (request, token) => this.run(request, token, true), true);
 
     projects.onDidChange(() => void this.discoverAll(), undefined, this.disposables);
     const watcher = vscode.workspace.createFileSystemWatcher("**/*.cs");

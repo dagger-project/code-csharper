@@ -15,11 +15,19 @@ function extensionVersion(extension: vscode.Extension<unknown>): string {
   return typeof packageJson.version === "string" ? packageJson.version : "";
 }
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+// What activate returns; the end-to-end tests use it to look inside.
+export type CodeCsharperApi = {
+  readonly projects: ProjectIndex;
+  readonly picker: TargetPicker;
+  readonly tests: TestExplorer;
+};
+
+export async function activate(context: vscode.ExtensionContext): Promise<CodeCsharperApi> {
   const log = vscode.window.createOutputChannel("Code Csharper", { log: true });
   const projects = new ProjectIndex();
   const picker = new TargetPicker(projects, context.workspaceState);
-  context.subscriptions.push(log, projects, picker, new TestExplorer(projects));
+  const tests = new TestExplorer(projects);
+  context.subscriptions.push(log, projects, picker, tests);
 
   registerDebugging(context);
   registerLaunching(context, projects, () => picker.selected);
@@ -43,13 +51,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   log.info(`Found ${projects.all.length} .NET projects.`);
 
   const base = findBaseExtension();
-  if (!base) {
+  if (base) {
+    log.info(`Using C# extension ${base.id}.`);
+  } else {
     log.warn("No C# extension found.");
-    await offerToInstallBaseExtension();
-    return;
+    // Not awaited: activation mustn't wait for someone to answer the notification.
+    void offerToInstallBaseExtension();
   }
 
-  log.info(`Using C# extension ${base.id}.`);
+  return { projects, picker, tests };
 }
 
 export function deactivate(): void {

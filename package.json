@@ -173,7 +173,7 @@
     ]
   },
   "scripts": {
-    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --main-fields=module,main --outfile=dist/extension.js",
     "build": "npm run bundle -- --sourcemap",
     "watch": "npm run build -- --watch",
     "typecheck": "tsc --noEmit",
@@ -181,11 +181,13 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "package": "rm -rf dist && npm run bundle -- --minify && vsce package --no-dependencies",
     "vscode:prepublish": "npm run check",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\""
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\"",
+    "test:e2e": "esbuild test/e2e/suite.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --main-fields=module,main --outfile=dist-test/suite.js && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON test/e2e/run.mts"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
     "@types/vscode": "~1.95.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.28.2",
     "fast-xml-parser": "^5.11.2",

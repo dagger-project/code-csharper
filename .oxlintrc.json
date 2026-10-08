@@ -79,6 +79,15 @@
         // Optional chains on indexed results keep assertions readable.
         "typescript/no-unnecessary-condition": "off"
       }
+    },
+    {
+      "files": ["test/e2e/**"],
+      "rules": {
+        // The launcher reports to the terminal.
+        "no-console": "off",
+        // Debug adapter responses come back untyped from customRequest.
+        "typescript/no-unsafe-type-assertion": "off"
+      }
     }
   ]
 }
