@@ -96,6 +96,19 @@ npm run package   # code-csharper-<version>.vsix
 
 Press F5 in VS Code ("Run Extension") to start an Extension Development Host.
 
+## Releasing
+
+Bump `version` in `package.json`, commit, then tag and push:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The Release workflow checks the tag matches `package.json`, runs the checks, publishes the
+`.vsix` to [Open VSX](https://open-vsx.org/extension/dagger-project/code-csharper) and attaches it
+to a GitHub release. It needs an `OVSX_PAT` secret (an Open VSX access token with rights to the
+`dagger-project` namespace) in the repository's `openvsx` environment.
+
 ## License
 
 [Apache 2.0](LICENSE)
