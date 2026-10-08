@@ -1,0 +1,54 @@
+{
+  "name": "code-csharper",
+  "displayName": "Code Csharper",
+  "description": "Open-source C# project tooling (solution explorer, test explorer, project-aware debugging) on top of the base C# extension, with the Digger debugger. Works in VS Code, Cursor, VSCodium, Windsurf and other VS Code forks.",
+  "version": "0.1.0",
+  "publisher": "dagger-project",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "https://github.com/dagger-project/code-csharper" },
+  "bugs": { "url": "https://github.com/dagger-project/code-csharper/issues" },
+  "engines": { "vscode": "^1.95.0" },
+  "categories": ["Programming Languages", "Debuggers", "Testing"],
+  "keywords": ["dotnet", ".NET", "C#", "csharp", "solution", "debugger", "digger"],
+  "extensionKind": ["workspace"],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/*.{sln,slnx,slnf,csproj}",
+    "onLanguage:csharp",
+    "onDebugResolve:coreclr"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Code Csharper",
+      "properties": {
+        "codeCsharper.useDiggerForCoreclr": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Run `\"type\": \"coreclr\"` launch configurations with the Digger debugger instead of the base C# extension's debugger. Needs the Digger extension. Not available on Windows yet."
+        }
+      }
+    },
+    "commands": [
+      { "command": "codeCsharper.showStatus", "title": "Show Status", "category": "Code Csharper" }
+    ]
+  },
+  "scripts": {
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js",
+    "build": "npm run bundle -- --sourcemap",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "check": "npm run typecheck && npm run lint",
+    "package": "rm -rf dist && npm run bundle -- --minify && vsce package --no-dependencies",
+    "vscode:prepublish": "npm run check"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/vscode": "~1.95.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2003",
+    "typescript": "^7.0.2"
+  }
+}
