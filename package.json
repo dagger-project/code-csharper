@@ -1,26 +1,79 @@
 {
   "name": "code-csharper",
   "displayName": "Code Csharper",
-  "description": "Open-source C# project tooling (solution explorer, test explorer, project-aware debugging) on top of the base C# extension, with the Digger debugger. Works in VS Code, Cursor, VSCodium, Windsurf and other VS Code forks.",
+  "description": "Launch profiles (launchSettings.json) and a Test Explorer for .NET, on top of the base C# extension, debugging with Digger. Works in VS Code, Cursor, VSCodium, Windsurf and other VS Code forks.",
   "version": "0.1.0",
   "publisher": "dagger-project",
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "https://github.com/dagger-project/code-csharper" },
-  "bugs": { "url": "https://github.com/dagger-project/code-csharper/issues" },
-  "engines": { "vscode": "^1.95.0" },
-  "categories": ["Programming Languages", "Debuggers", "Testing"],
-  "keywords": ["dotnet", ".NET", "C#", "csharp", "solution", "debugger", "digger"],
-  "extensionKind": ["workspace"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dagger-project/code-csharper"
+  },
+  "bugs": {
+    "url": "https://github.com/dagger-project/code-csharper/issues"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers",
+    "Testing"
+  ],
+  "keywords": [
+    "dotnet",
+    ".NET",
+    "C#",
+    "csharp",
+    "solution",
+    "debugger",
+    "digger"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "workspaceContains:**/*.{sln,slnx,slnf,csproj}",
+    "workspaceContains:**/*.{sln,slnx,slnf,csproj,fsproj,vbproj}",
     "onLanguage:csharp",
-    "onDebugResolve:coreclr"
+    "onDebugResolve:coreclr",
+    "onDebugResolve:csharper",
+    "onDebugDynamicConfigurations:csharper"
   ],
   "contributes": {
     "configuration": {
       "title": "Code Csharper",
       "properties": {
+        "codeCsharper.debugger": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "digger",
+            "coreclr"
+          ],
+          "enumDescriptions": [
+            "Digger when the Digger extension is installed (not on Windows), otherwise the C# extension's debugger.",
+            "The Digger debugger.",
+            "The C# extension's debugger."
+          ],
+          "default": "auto",
+          "description": "The debugger for launch profiles and tests."
+        },
+        "codeCsharper.console": {
+          "type": "string",
+          "enum": [
+            "internalConsole",
+            "integratedTerminal",
+            "externalTerminal"
+          ],
+          "default": "internalConsole",
+          "description": "Where programs debugged from a launch profile run: the debug console (no stdin) or a terminal (stdin works)."
+        },
+        "codeCsharper.dotnetPath": {
+          "type": "string",
+          "default": "",
+          "description": "The dotnet executable. Empty: dotnet on PATH."
+        },
         "codeCsharper.useDiggerForCoreclr": {
           "type": "boolean",
           "default": false,
@@ -29,7 +82,94 @@
       }
     },
     "commands": [
-      { "command": "codeCsharper.showStatus", "title": "Show Status", "category": "Code Csharper" }
+      {
+        "command": "codeCsharper.selectLaunchTarget",
+        "title": "Select Launch Profile",
+        "category": "Code Csharper",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "codeCsharper.runLaunchTarget",
+        "title": "Run Launch Profile",
+        "category": "Code Csharper",
+        "icon": "$(play)"
+      },
+      {
+        "command": "codeCsharper.debugLaunchTarget",
+        "title": "Debug Launch Profile",
+        "category": "Code Csharper",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "codeCsharper.showStatus",
+        "title": "Show Status",
+        "category": "Code Csharper"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "codeCsharper.selectLaunchTarget",
+        "key": "alt+shift+f10",
+        "mac": "alt+shift+f10"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "csharper",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The dotnet command (build, run)."
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "csharper",
+        "label": "Code Csharper (.NET launch profile)",
+        "configurationAttributes": {
+          "launch": {
+            "properties": {
+              "project": {
+                "type": "string",
+                "description": "The project file to build and debug. Empty: the launch profile selected in the status bar."
+              },
+              "launchProfile": {
+                "type": "string",
+                "description": "The profile in the project's Properties/launchSettings.json."
+              },
+              "justMyCode": {
+                "type": "boolean",
+                "default": true
+              },
+              "stopAtEntry": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        },
+        "configurationSnippets": [
+          {
+            "label": "Code Csharper: Launch Profile",
+            "description": "Build and debug a project with one of its launch profiles",
+            "body": {
+              "name": "${2:MyApp}: ${3:https}",
+              "type": "csharper",
+              "request": "launch",
+              "project": "^\"\\${workspaceFolder}/${1:src/MyApp/MyApp.csproj}\"",
+              "launchProfile": "${3:https}"
+            }
+          }
+        ]
+      }
     ]
   },
   "scripts": {
@@ -38,15 +178,18 @@
     "watch": "npm run build -- --watch",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
-    "check": "npm run typecheck && npm run lint",
+    "check": "npm run typecheck && npm run lint && npm test",
     "package": "rm -rf dist && npm run bundle -- --minify && vsce package --no-dependencies",
-    "vscode:prepublish": "npm run check"
+    "vscode:prepublish": "npm run check",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
     "@types/vscode": "~1.95.0",
     "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.28.2",
+    "fast-xml-parser": "^5.11.2",
+    "jsonc-parser": "^3.3.1",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
     "typescript": "^7.0.2"

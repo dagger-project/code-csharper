@@ -19,9 +19,51 @@ Microsoft's products:
 installed extension at activation (`src/baseExtension.ts`) and offers to install the right one
 for the editor when there is none.
 
-Project features (solution explorer, test explorer, project-aware launch) will use the base
-extension's exports: its Roslyn language server answers custom requests for opening solutions
-and projects, project information and running tests.
+Code Csharper doesn't use the base extension's API yet: launch profiles and tests work from the
+project files, `launchSettings.json`, C# source and the dotnet CLI, so they behave the same with
+every base extension.
+
+## Projects
+
+`src/projects.ts` finds the project files in the workspace and sorts them by reading their text
+(no MSBuild evaluation): test projects reference a test framework or `Microsoft.NET.Test.Sdk`;
+runnable projects have a `launchSettings.json`, `OutputType` `Exe`/`WinExe`, or a web, worker or
+Aspire SDK. It rescans when project or `launchSettings.json` files change.
+
+## Launch profiles
+
+A launch target is a profile (`src/launchSettings.ts`) or a runnable project without profiles.
+
+- Run: a `dotnet run --project … --launch-profile …` task, so `dotnet run` applies the profile.
+- Debug: the `csharper` debug type (`src/launch.ts`) has no adapter of its own. Its
+  configurations (`project`, `launchProfile`) are offered as dynamic configurations, which is how
+  they appear in the Run and Debug dropdown. When one starts, its provider asks MSBuild for
+  `TargetPath` (`dotnet msbuild -getProperty`), builds with a `dotnet build` task, and returns a
+  `digger` or `coreclr` launch configuration built from the profile. VS Code resolves and launches
+  that like any other. `launchBrowser` maps to VS Code's `serverReadyAction`, which works with any
+  debugger.
+
+`src/targetPicker.ts` keeps the selected target in workspace state and shows it in the status
+bar.
+
+## Tests
+
+`src/testing/`:
+
+- `discovery.ts` finds test classes and methods in C# source. It blanks out comments and string
+  literals, then counts braces to track namespaces and (nested) classes. Full names follow the
+  test frameworks: `Namespace.Outer+Inner.Method`.
+- `controller.ts` is the VS Code test controller. Each run is one `dotnet test` per project, with
+  a `FullyQualifiedName` filter for the chosen classes and methods and `--logger trx`.
+  Data-driven cases share their method's `FullyQualifiedName` in all three frameworks, so an
+  exact match runs them all. (NUnit rejects filters with escaped parentheses, so the filter
+  avoids them.)
+- `trx.ts` reads the TRX report and maps each result to `Namespace.Class.Method` through the
+  report's class and method names.
+
+Debugging sets `VSTEST_HOST_DEBUG=1` (and `VSTEST_DEBUG_NOBP=1` to skip its breakpoint): the test
+host prints `Process Id: N` and waits; the controller attaches with the chosen debugger, which
+lets the tests run.
 
 ## Debugging
 

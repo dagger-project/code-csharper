@@ -60,6 +60,25 @@
     // The VS Code API hands out mutable types everywhere; readonly parameters are noise.
     "typescript/prefer-readonly-parameter-types": "off",
     // Misfires on exhaustive switches; tsconfig's noImplicitReturns covers it.
-    "typescript/consistent-return": "off"
-  }
+    "typescript/consistent-return": "off",
+    // Size is reviewed, not counted.
+    "max-lines": "off",
+    "max-lines-per-function": "off",
+    "max-depth": "off",
+    // Builds and test runs happen one after another on purpose.
+    "no-await-in-loop": "off",
+    // `.filter(isNode)` with a type guard is clearer than a lambda.
+    "unicorn/no-array-callback-reference": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        // node:test's test() returns a promise the runner tracks itself.
+        "typescript/no-floating-promises": "off",
+        // Optional chains on indexed results keep assertions readable.
+        "typescript/no-unnecessary-condition": "off"
+      }
+    }
+  ]
 }
